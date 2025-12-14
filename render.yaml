@@ -4,9 +4,8 @@ services:
     env: node
     region: ohio
     plan: free
-    rootDirectory: backend
-    buildCommand: npm install
-    startCommand: node server.js
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
     envVars:
       - key: DATABASE_URL
         sync: false
