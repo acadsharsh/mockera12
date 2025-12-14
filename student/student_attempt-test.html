@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JEE Main 2024 - Attempt Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        /* CBT Specific Styles to mimic NTA Interface */
+        body { font-family: Arial, sans-serif; user-select: none; }
+        .top-bar { height: 60px; background: #333; color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+        .candidate-img { height: 40px; width: 40px; border-radius: 50%; background: #ccc; }
+        .main-container { display: flex; height: calc(100vh - 60px); }
+        .question-area { flex: 1; display: flex; flex-col: column; border-right: 1px solid #ccc; overflow-y: auto; }
+        .sidebar { width: 320px; display: flex; flex-direction: column; background: #e5f6fd; }
+        
+        .question-header { padding: 10px; background: #fff; border-bottom: 1px solid #ddd; font-weight: bold; }
+        .question-content { flex: 1; padding: 20px; background: #fff; overflow-y: auto; }
+        .options-container { margin-top: 20px; }
+        .option-row { display: flex; align-items: flex-start; margin-bottom: 10px; cursor: pointer; }
+        .option-radio { margin-top: 4px; margin-right: 10px; }
+
+        .footer-bar { height: 60px; border-top: 1px solid #ccc; background: #f9f9f9; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+
+        .palette-section { flex: 1; padding: 10px; overflow-y: auto; }
+        .palette-header { background: #d7ebf7; padding: 10px; font-weight: bold; border-bottom: 1px solid #bcd; }
+        .palette-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px; }
+        
+        .q-btn { 
+            height: 40px; width: 40px; 
+            display: flex; align-items: center; justify-content: center; 
+            border: 1px solid #ccc; cursor: pointer; background: #fff; 
+            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+        }
+        
+        .q-btn.answered { background: #00c853; color: white; border: none; }
+        .q-btn.not-answered { background: #ff5722; color: white; border: none; }
+        .q-btn.marked { background: #5c6bc0; color: white; border: none; border-radius: 50%; clip-path: none; }
+        .q-btn.marked-answered { background: #5c6bc0; color: white; border: none; border-radius: 50%; clip-path: none; position: relative; }
+        .q-btn.marked-answered::after { content: '✔'; position: absolute; bottom: 0; right: 0; font-size: 10px; color: #00c853; background: white; border-radius: 50%; padding: 1px; }
+        .q-btn.not-visited { background: #fff; }
+        .q-btn.current { border: 2px solid #000; }
+
+        .legend { font-size: 12px; padding: 10px; background: #f0f0f0; border-bottom: 1px solid #ccc; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-box { width: 20px; height: 20px; display: inline-block; border: 1px solid #ccc; text-align: center; line-height: 18px; font-size: 10px; }
+
+        .timer-box { font-size: 20px; font-weight: bold; color: white; }
+    </style>
+</head>
+<body>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="flex items-center gap-4">
+            <div class="text-xl font-bold">JEE MAIN MOCK</div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div>Candidate Name: <span class="font-bold">John Doe</span></div>
+            <div class="bg-black px-3 py-1 rounded">
+                Time Left: <span id="timer" class="timer-box">03:00:00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Interface -->
+    <div class="main-container">
+        <!-- Question Area -->
+        <div class="question-area">
+            <div class="question-header flex justify-between">
+                <span>Subject: <span id="subject-name" class="text-blue-600">Physics</span></span>
+                <span>Question Type: <span id="question-type">MCQ</span></span>
+            </div>
+            
+            <div class="question-content">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <div class="text-lg font-bold">Question No. <span id="q-no">1</span></div>
+                    <div class="flex gap-2">
+                        <button class="text-sm text-blue-600 hover:underline">English</button>
+                        <button class="text-sm text-red-600 hover:underline">Report</button>
+                    </div>
+                </div>
+
+                <!-- Mock Question Image Placeholder -->
+                <div id="q-image-container" class="mb-6 p-4 border border-gray-200 bg-gray-50 min-h-[200px] flex items-center justify-center text-gray-400">
+                    [ PDF Question Crop Image Here ]
+                </div>
+
+                <!-- Options -->
+                <div class="options-container space-y-3" id="options-list">
+                    <!-- Options injected via JS -->
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="footer-bar">
+                <div class="flex gap-2">
+                    <button id="btn-clear" class="px-4 py-2 border border-gray-400 rounded bg-white hover:bg-gray-100">Clear Response</button>
+                    <button id="btn-mark" class="px-4 py-2 border border-purple-600 text-purple-600 rounded bg-white hover:bg-purple-50">Mark for Review & Next</button>
+                </div>
+                <button id="btn-save" class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-bold">Save & Next</button>
+            </div>
+        </div>
+
+        <!-- Right Sidebar (Palette) -->
+        <div class="sidebar">
+            <div class="flex items-center p-2 bg-gray-200 border-b">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='w-10 h-10 bg-gray-400 rounded-full p-1 text-white'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E" class="mr-3">
+                <div class="text-sm font-bold">John Doe</div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item"><span class="legend-box q-btn not-visited">1</span> Not Visited</div>
+                <div class="legend-item"><span class="legend-box q-btn not-answered">2</span> Not Answered</div>
+                <div class="legend-item"><span class="legend-box q-btn answered">3</span> Answered</div>
+                <div class="legend-item"><span class="legend-box q-btn marked">4</span> Marked for Review</div>
+                <div class="legend-item col-span-2"><span class="legend-box q-btn marked-answered">5</span> Ans & Marked for Review (Will be evaluated)</div>
+            </div>
+
+            <div class="palette-header">
+                Subject: 
+                <select id="subject-select" class="ml-2 p-1 border rounded text-sm w-32">
+                    <option value="Physics">Physics</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Mathematics">Mathematics</option>
+                </select>
+            </div>
+
+            <div class="palette-section">
+                <div class="palette-grid" id="palette-grid">
+                    <!-- Grid injected via JS -->
+                </div>
+            </div>
+
+            <div class="p-4 bg-gray-100 border-t">
+                <button id="btn-submit" class="w-full py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700">SUBMIT TEST</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/config.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        // State
+        let TEST_DATA = null;
+        let currentSubject = "All"; // Default to show all or handle subjects if API returns them
+        let currentIndex = 0;
+        let timeLeft = 0;
+        let timerInterval = null;
+        let questionsList = []; // Flattened or grouped
+
+        // Elements
+        const timerEl = document.getElementById('timer');
+        const paletteGrid = document.getElementById('palette-grid');
+        const qNoEl = document.getElementById('q-no');
+        const qTypeEl = document.getElementById('question-type');
+        const optionsList = document.getElementById('options-list');
+        const subjectSelect = document.getElementById('subject-select');
+        const subjectNameEl = document.getElementById('subject-name');
+        
+        const btnSave = document.getElementById('btn-save');
+        const btnMark = document.getElementById('btn-mark');
+        const btnClear = document.getElementById('btn-clear');
+        const btnSubmit = document.getElementById('btn-submit');
+        const qImageContainer = document.getElementById('q-image-container');
+
+        // Initialization
+        async function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const testId = urlParams.get('id');
+
+            if (!testId) {
+                alert('No Test ID specified. Redirecting to list.');
+                window.location.href = '/student/test-list.html';
+                return;
+            }
+
+            try {
+                // Fetch from API
+                const data = await api.getTestDetails(testId);
+                
+                // Transform data for UI
+                TEST_DATA = data.test;
+                // Add status tracking to questions
+                questionsList = data.questions.map(q => ({
+                    ...q,
+                    status: 'not-visited',
+                    selectedOption: null,
+                    subject: 'Physics' // API should return subject, defaulting for now
+                }));
+
+                // Setup Timer
+                timeLeft = TEST_DATA.duration_minutes * 60;
+                startTimer();
+
+                // Setup Subjects (Simplified: Assuming single list for MVP if no subject field)
+                // In real app, extract unique subjects from questionsList
+                // For now, let's pretend they are all "General" or use the dropdown to filter
+                
+                // Render initial state
+                renderPalette();
+                loadQuestion();
+
+                // Event Listeners
+                subjectSelect.addEventListener('change', (e) => {
+                    // Filter logic would go here
+                    alert('Subject switching not fully implemented in this prototype version.');
+                });
+
+                btnSave.onclick = () => saveResponse('save');
+                btnMark.onclick = () => saveResponse('mark');
+                btnClear.onclick = clearResponse;
+                btnSubmit.onclick = submitTest;
+
+            } catch (err) {
+                console.error(err);
+                alert('Failed to load test. ' + err.message);
+                // window.location.href = '/student/test-list.html';
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    submitTest(true); // Auto submit
+                    return;
+                }
+                timeLeft--;
+                const h = Math.floor(timeLeft / 3600);
+                const m = Math.floor((timeLeft % 3600) / 60);
+                const s = timeLeft % 60;
+                timerEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            }, 1000);
+        }
+
+        function renderPalette() {
+            paletteGrid.innerHTML = '';
+            // Render all questions
+            questionsList.forEach((q, idx) => {
+                const btn = document.createElement('div');
+                btn.className = `q-btn ${q.status} ${idx === currentIndex ? 'current' : ''}`;
+                
+                if (q.status === 'answered' && q.marked) btn.className = 'q-btn marked-answered'; 
+                
+                btn.textContent = idx + 1;
+                btn.onclick = () => {
+                    currentIndex = idx;
+                    loadQuestion();
+                    renderPalette();
+                };
+                paletteGrid.appendChild(btn);
+            });
+        }
+
+        function loadQuestion() {
+            const q = questionsList[currentIndex];
+            qNoEl.textContent = currentIndex + 1;
+            qTypeEl.textContent = q.question_type;
+            subjectNameEl.textContent = q.subject || "General";
+            
+            if (q.status === 'not-visited') {
+                q.status = 'not-answered';
+            }
+
+            // Image handling
+            if (q.image_url) {
+                qImageContainer.innerHTML = `<img src="${q.image_url}" class="max-w-full max-h-[400px]" alt="Question Image">`;
+            } else {
+                qImageContainer.innerHTML = `[Question Text/Image Placeholder for Q${q.id}]`;
+            }
+
+            optionsList.innerHTML = '';
+
+            if (q.question_type === 'MCQ' || q.question_type === 'MSQ') {
+                // Parse options if JSON string
+                let opts = q.options;
+                if (typeof opts === 'string') opts = JSON.parse(opts);
+                if (!opts) opts = ['A', 'B', 'C', 'D']; // Fallback
+
+                opts.forEach(opt => {
+                    const row = document.createElement('label');
+                    row.className = 'option-row';
+                    // Checkbox for MSQ, Radio for MCQ
+                    const inputType = q.question_type === 'MSQ' ? 'checkbox' : 'radio';
+                    const isChecked = q.selectedOption === opt; // Simplified for MCQ
+                    
+                    row.innerHTML = `
+                        <input type="${inputType}" name="opt" value="${opt}" class="option-radio" ${isChecked ? 'checked' : ''}>
+                        <div class="flex-1 text-gray-800">Option ${opt}</div>
+                    `;
+                    optionsList.appendChild(row);
+                });
+            } else {
+                // Numerical
+                optionsList.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <label>Answer:</label>
+                        <input type="text" id="numerical-input" class="border p-2 rounded w-40" value="${q.selectedOption || ''}">
+                    </div>
+                `;
+            }
+        }
+
+        function saveResponse(action) {
+            const q = questionsList[currentIndex];
+            
+            let val = null;
+            if (q.question_type === 'MCQ') {
+                const checked = document.querySelector('input[name="opt"]:checked');
+                if (checked) val = checked.value;
+            } else if (q.question_type === 'MSQ') {
+                // Collect all checked
+                const checked = document.querySelectorAll('input[name="opt"]:checked');
+                if (checked.length > 0) val = Array.from(checked).map(c => c.value).join(',');
+            } else {
+                const inp = document.getElementById('numerical-input');
+                if (inp) val = inp.value;
+            }
+
+            q.selectedOption = val;
+
+            if (action === 'save') {
+                if (val) q.status = 'answered';
+                else q.status = 'not-answered';
+            } else if (action === 'mark') {
+                if (val) q.status = 'marked-answered';
+                else q.status = 'marked';
+            }
+
+            if (currentIndex < questionsList.length - 1) {
+                currentIndex++;
+                loadQuestion();
+            }
+            renderPalette();
+        }
+
+        function clearResponse() {
+            const q = questionsList[currentIndex];
+            q.selectedOption = null;
+            q.status = 'not-answered';
+            loadQuestion();
+            renderPalette();
+        }
+
+        async function submitTest(auto = false) {
+            if(!auto && !confirm('Are you sure you want to submit?')) return;
+
+            clearInterval(timerInterval);
+            
+            // Prepare payload
+            const payload = {
+                testId: TEST_DATA.id,
+                timeTaken: (TEST_DATA.duration_minutes * 60) - timeLeft,
+                responses: questionsList.map(q => ({
+                    questionId: q.id,
+                    selectedOption: q.selectedOption,
+                    timeSpent: 0 // Not tracked in this prototype
+                }))
+            };
+
+            try {
+                btnSubmit.textContent = 'Submitting...';
+                btnSubmit.disabled = true;
+                
+                const res = await api.submitTest(payload);
+                window.location.href = `/student/result.html?submissionId=${res.submissionId}`;
+            } catch (err) {
+                console.error(err);
+                alert('Submission failed: ' + err.message);
+                btnSubmit.textContent = 'SUBMIT TEST';
+                btnSubmit.disabled = false;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

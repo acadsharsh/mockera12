@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Result - JEE Mock Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-bold text-gray-800">Test Result</span>
+                </div>
+                <div class="flex items-center">
+                    <a href="/index.html" class="text-gray-500 hover:text-gray-700">Home</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="main-content">
+        
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-10">
+            <p class="text-xl text-gray-600">Calculating Result...</p>
+        </div>
+
+        <div id="result-view" class="hidden">
+            <!-- Header Info -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6 flex flex-col md:flex-row justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900" id="test-title">--</h1>
+                    <p class="text-gray-500">Attempted on: <span id="attempt-date">--</span></p>
+                </div>
+                <div class="mt-4 md:mt-0 flex gap-4">
+                    <a href="/student/analysis.html" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition">
+                        View Deep Analysis
+                    </a>
+                    <a href="/student/test-list.html" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-lg font-semibold transition">
+                        Back to Tests
+                    </a>
+                </div>
+            </div>
+
+            <!-- Score Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <!-- Total Score -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-gray-500 text-sm font-medium uppercase">Total Score</h3>
+                    </div>
+                    <div class="flex items-baseline">
+                        <span class="text-4xl font-extrabold text-gray-900" id="score-val">0</span>
+                        <span class="text-gray-500 ml-1">/ <span id="total-marks">300</span></span>
+                    </div>
+                </div>
+
+                <!-- Percentile -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-gray-500 text-sm font-medium uppercase">Percentage</h3>
+                    </div>
+                    <div class="flex items-baseline">
+                        <span class="text-4xl font-extrabold text-gray-900" id="percentage-val">0</span>
+                        <span class="text-gray-500 ml-1">%</span>
+                    </div>
+                </div>
+
+                <!-- Accuracy -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-gray-500 text-sm font-medium uppercase">Accuracy</h3>
+                    </div>
+                    <div class="flex items-baseline">
+                        <span class="text-4xl font-extrabold text-gray-900" id="accuracy-val">0</span>
+                        <span class="text-gray-500 ml-1">%</span>
+                    </div>
+                </div>
+
+                <!-- Time Taken -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-gray-500 text-sm font-medium uppercase">Time Taken</h3>
+                    </div>
+                    <div class="flex items-baseline">
+                        <span class="text-4xl font-extrabold text-gray-900" id="time-val">00:00</span>
+                        <span class="text-gray-500 ml-1">min</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject Wise Breakdown -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Table -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-800">Performance Summary</h3>
+                    </div>
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 text-gray-600 font-medium text-sm">
+                            <tr>
+                                <th class="px-6 py-3">Metric</th>
+                                <th class="px-6 py-3">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm" id="summary-body">
+                            <!-- Injected JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Chart -->
+                <div class="bg-white rounded-xl shadow-sm p-6 flex flex-col items-center justify-center">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 w-full text-left">Score Distribution</h3>
+                    <div class="h-64 w-full">
+                        <canvas id="scoreChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="/js/config.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        async function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const subId = urlParams.get('submissionId');
+            
+            if(!subId) {
+                alert('No Submission ID found.');
+                window.location.href = '/student/test-list.html';
+                return;
+            }
+
+            try {
+                const data = await api.getResult(subId);
+                
+                // Populate Header
+                document.getElementById('test-title').textContent = data.title;
+                document.getElementById('attempt-date').textContent = new Date(data.submitted_at).toLocaleDateString();
+
+                // Populate Cards
+                document.getElementById('score-val').textContent = data.score;
+                document.getElementById('total-marks').textContent = data.total_marks;
+                
+                const percentage = ((data.score / data.total_marks) * 100).toFixed(2);
+                document.getElementById('percentage-val').textContent = percentage;
+                
+                // Accuracy logic would need correct/wrong counts which backend sends
+                // For MVP let's assume accuracy_percentage comes from backend or we calc if we had details
+                document.getElementById('accuracy-val').textContent = data.accuracy_percentage || '--';
+
+                const mins = Math.floor(data.time_taken_seconds / 60);
+                const secs = data.time_taken_seconds % 60;
+                document.getElementById('time-val').textContent = `${mins}:${secs}`;
+
+                // Show Content
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('result-view').classList.remove('hidden');
+
+                // Chart
+                const ctx = document.getElementById('scoreChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Score', 'Lost'],
+                        datasets: [{
+                            data: [data.score, data.total_marks - data.score],
+                            backgroundColor: ['#3b82f6', '#e5e7eb']
+                        }]
+                    }
+                });
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

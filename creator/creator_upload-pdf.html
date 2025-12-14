@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload PDF - Creator Studio</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f8f9fa; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-gray-800">Create Test from PDF</h1>
+            <p class="text-gray-500 mt-2">Upload your question paper to start cropping questions.</p>
+        </div>
+
+        <div class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Test Name</label>
+                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="e.g. JEE Main Mock 15">
+            </div>
+
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition" id="drop-zone">
+                <svg class="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <span class="text-sm text-gray-600 font-medium">Click to upload or drag PDF</span>
+                <span class="text-xs text-gray-400 mt-1">Maximum file size 10MB</span>
+                <input type="file" accept="application/pdf" class="hidden" id="file-input">
+            </div>
+
+            <button onclick="window.location.href='/creator/pdf-cropper.html'" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow transition">
+                Upload & Proceed
+            </button>
+            
+            <a href="/creator/dashboard.html" class="block text-center text-sm text-gray-500 hover:text-gray-800">Cancel</a>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            if(e.target.files.length > 0) {
+                dropZone.querySelector('span').textContent = e.target.files[0].name;
+                dropZone.classList.add('border-blue-500', 'bg-blue-50');
+            }
+        });
+    </script>
+
+</body>
+</html>

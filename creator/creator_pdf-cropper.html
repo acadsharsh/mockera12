@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Cropper - Creator Studio</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #2d3748; overflow: hidden; }
+        canvas { cursor: crosshair; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); }
+    </style>
+</head>
+<body class="flex h-screen text-white">
+
+    <!-- Sidebar Tools -->
+    <aside class="w-80 bg-gray-800 flex flex-col border-r border-gray-700 z-10">
+        <div class="p-4 border-b border-gray-700 font-bold text-lg flex items-center gap-2">
+            <a href="/creator/dashboard.html" class="text-gray-400 hover:text-white">&larr;</a>
+            Cropping Tool
+        </div>
+        
+        <div class="p-4 flex-1 overflow-y-auto">
+            <div class="mb-6">
+                <h3 class="text-xs uppercase text-gray-500 font-bold mb-2">Instructions</h3>
+                <p class="text-sm text-gray-300">Draw a box around the question you want to extract.</p>
+            </div>
+
+            <div class="bg-gray-700 p-4 rounded-lg mb-4" id="crop-info" style="display: none;">
+                <h4 class="font-bold text-sm mb-2 text-blue-400">Current Selection</h4>
+                <div class="text-xs text-gray-300 grid grid-cols-2 gap-2">
+                    <div>X: <span id="val-x">0</span></div>
+                    <div>Y: <span id="val-y">0</span></div>
+                    <div>W: <span id="val-w">0</span></div>
+                    <div>H: <span id="val-h">0</span></div>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <button id="btn-add-crop" class="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Capture & Add Question
+                </button>
+                <button id="btn-clear" class="w-full bg-gray-600 hover:bg-gray-500 py-2 rounded text-sm">
+                    Clear Selection
+                </button>
+            </div>
+
+            <div class="mt-8 border-t border-gray-700 pt-4">
+                <h3 class="text-xs uppercase text-gray-500 font-bold mb-2">Extracted Questions (<span id="q-count">0</span>)</h3>
+                <div class="space-y-2 max-h-40 overflow-y-auto" id="questions-list">
+                    <!-- List items -->
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-gray-900 border-t border-gray-700">
+            <button class="w-full bg-green-600 hover:bg-green-700 py-3 rounded font-bold" onclick="window.location.href='/creator/test-settings.html'">
+                Finish & Configure Test
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Canvas Area -->
+    <main class="flex-1 relative bg-gray-600 overflow-auto flex items-center justify-center p-8">
+        <!-- PDF Page Simulation -->
+        <div class="relative bg-white shadow-2xl" style="width: 595px; height: 842px;"> <!-- A4 Size at 72dpi approx -->
+            <canvas id="pdf-canvas" width="595" height="842" class="absolute top-0 left-0"></canvas>
+            
+            <!-- PDF.js container -->
+            <div id="pdf-render-container" class="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
+                <p>PDF Page Loaded Here via PDF.js</p>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-800 rounded-full px-4 py-2 flex items-center gap-4 shadow-lg">
+            <button class="hover:text-blue-400">&larr;</button>
+            <span class="text-sm font-mono">Page 1 / 12</span>
+            <button class="hover:text-blue-400">&rarr;</button>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('pdf-canvas');
+        const ctx = canvas.getContext('2d');
+        const btnAdd = document.getElementById('btn-add-crop');
+        const btnClear = document.getElementById('btn-clear');
+        const cropInfo = document.getElementById('crop-info');
+        const qCount = document.getElementById('q-count');
+        const qList = document.getElementById('questions-list');
+        
+        // Mock State
+        let isDrawing = false;
+        let startX = 0;
+        let startY = 0;
+        let currentRect = null;
+        let questions = [];
+
+        // Events
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            isDrawing = true;
+            currentRect = null;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            draw(mouseX, mouseY);
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (!isDrawing) return;
+            isDrawing = false;
+            
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            // Finalize rect
+            const w = mouseX - startX;
+            const h = mouseY - startY;
+            
+            if (Math.abs(w) > 10 && Math.abs(h) > 10) {
+                currentRect = { x: startX, y: startY, w, h };
+                updateUI(currentRect);
+                btnAdd.disabled = false;
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        });
+
+        function draw(mouseX, mouseY) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 3]);
+            ctx.strokeRect(startX, startY, mouseX - startX, mouseY - startY);
+            
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
+            ctx.fillRect(startX, startY, mouseX - startX, mouseY - startY);
+        }
+
+        function updateUI(rect) {
+            cropInfo.style.display = 'block';
+            document.getElementById('val-x').textContent = Math.round(rect.x);
+            document.getElementById('val-y').textContent = Math.round(rect.y);
+            document.getElementById('val-w').textContent = Math.round(rect.w);
+            document.getElementById('val-h').textContent = Math.round(rect.h);
+        }
+
+        btnClear.onclick = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            currentRect = null;
+            btnAdd.disabled = true;
+            cropInfo.style.display = 'none';
+        };
+
+        btnAdd.onclick = () => {
+            if(!currentRect) return;
+            
+            questions.push(currentRect);
+            qCount.textContent = questions.length;
+            
+            const item = document.createElement('div');
+            item.className = "bg-gray-800 p-2 rounded text-xs flex justify-between items-center";
+            item.innerHTML = `<span>Q${questions.length}</span> <button class="text-red-400 hover:text-red-300">&times;</button>`;
+            qList.appendChild(item);
+            
+            // In a real app, we would save the crop image here
+            // Reset
+            btnClear.click();
+        };
+
+    </script>
+</body>
+</html>

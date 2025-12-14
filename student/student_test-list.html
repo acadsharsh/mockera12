@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Tests - JEE Mock Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-bold text-gray-800">Student Portal</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm text-gray-600">Welcome, John Doe</span>
+                    <a href="/index.html" class="text-sm text-red-600 hover:text-red-800">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">Available Tests</h1>
+
+        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+            <div id="loading" class="p-8 text-center text-gray-500">Loading tests...</div>
+            <div id="error-container" class="hidden p-8 text-center text-red-500 bg-red-50"></div>
+            <ul id="test-list-ul" class="divide-y divide-gray-200 hidden">
+                <!-- Tests will be injected here -->
+            </ul>
+        </div>
+
+    <script src="/js/config.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const listEl = document.getElementById('test-list-ul');
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error-container');
+
+            try {
+                // Fetch tests from real backend
+                const tests = await api.getTests();
+                
+                loadingEl.classList.add('hidden');
+                
+                if (tests.length === 0) {
+                    listEl.classList.remove('hidden');
+                    listEl.innerHTML = '<li class="p-4 text-center text-gray-500">No active tests found.</li>';
+                    return;
+                }
+
+                listEl.classList.remove('hidden');
+                
+                tests.forEach(test => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="px-4 py-4 sm:px-6 hover:bg-gray-50 transition">
+                            <div class="flex items-center justify-between">
+                                <p class="text-lg font-medium text-blue-600 truncate">${test.title}</p>
+                                <div class="ml-2 flex-shrink-0 flex">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mt-2 sm:flex sm:justify-between">
+                                <div class="sm:flex">
+                                    <p class="flex items-center text-sm text-gray-500 mr-6">
+                                        <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        ${test.duration_minutes} mins
+                                    </p>
+                                    <p class="flex items-center text-sm text-gray-500 mr-6">
+                                        <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                        ${test.question_count || '?'} Questions
+                                    </p>
+                                    <p class="flex items-center text-sm text-gray-500">
+                                        Marks: ${test.total_marks}
+                                    </p>
+                                </div>
+                                <div class="mt-2 flex items-center text-sm sm:mt-0">
+                                    <a href="/student/attempt-test.html?id=${test.id}" class="font-medium text-blue-600 hover:text-blue-500 border border-blue-600 px-4 py-1 rounded hover:bg-blue-50 transition">
+                                        Start Test &rarr;
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    listEl.appendChild(li);
+                });
+
+            } catch (err) {
+                loadingEl.classList.add('hidden');
+                errorEl.classList.remove('hidden');
+                errorEl.innerHTML = `
+                    <p class="font-bold">Failed to load tests</p>
+                    <p class="text-sm">${err.message}</p>
+                    <p class="text-xs mt-2">Ensure local backend is running at ${CONFIG.API_BASE_URL}</p>
+                `;
+            }
+        });
+    </script>
+    </div>
+
+</body>
+</html>
