@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: jee-mock-backend
+    env: node
+    region: ohio
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    root: backend
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 10000
